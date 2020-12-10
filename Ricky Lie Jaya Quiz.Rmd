@@ -1,0 +1,189 @@
+---
+title: "Data Visualization Quiz"
+author: "Arga Adyatama"
+date: "1/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Kuis ini merupakan bagian dari proses penilaian *Algoritma Academy*. Selamat anda sudah menyelesaikan materi *Programming for Data Science* dan *Practical Statistics*! Kami akan melakukan penilaian berupa kuis untuk menguji materi yang sudah dipelajari. Pengerjaan Kuis diharapkan dapat dilakukan di dalam kelas, silakan hubungi tim instruktur kami jika Anda melewatkan kesempatan untuk mengambilnya di kelas.
+
+## Inspecting Dataset
+
+Kita akan menganalisa data dari **Kiva**, sebuah organisasi non-profit yang membantu masyarakat untuk meminjam uang dengan model P2P (peer-to-peer). Import data yang ada dari `loan_kiva.csv`. Data tersebut memiliki 165,040 baris dengan 14 variabel serta terdiri dari permintaan pinjaman yang tercatat mulai dari tahun 2015.
+ 
+Pertama, import dan baca datanya ke dalam R.
+
+```{r}
+quiz <- read.csv("loan_kiva.csv")
+quiz
+```
+
+Gunakan informasi berikut untuk keterangan dari setiap kolom:
+
+* `id`: ID atau tanda pengenal dari setiap permintaan pinjaman
+* `funded_amount`: Jumlah uang yang diberikan oleh Kiva kepada agen lapangan (dalam USD) 
+* `loan_amount`: Jumlah uang yang diberikan oleh agen lapangan kepada peminjam (dalam USD)
+* `activity`: Kategori aktivitas yang dilakukan oleh peminjam
+* `sector`: Kategori umum dari jenis pinjaman
+* `country`: Nama negara dari lokasi peminjam
+* `region`: Nama daerah dari lokasi peminjam
+* `currency`: Mata uang yang digunakan ketika uang diberikan kepada peminjam
+* `partner_id`: ID dari organisasi mitra
+* `posted_time`: Waktu ketika agen lapangan memposting permintaan pinjaman ke Kiva
+* `funded_time`: Waktu ketika pinjaman berhasil didanai sepenuhnya
+* `term_in_months`: Durasi pemberian uang kepada peminjam (dalam bulan)
+* `lender_count`: Jumlah pemberi pinjaman dari setiap permintaan pinjaman
+* `repayment_interval`: Jangka waktu pengembalian pinjaman.
+___
+
+## Analisis Distribusi Data
+
+1. Dengan memvisualisasikan distribusi dari variabel `lender_count`, kita dapat menemukan pada interval berapa yang memiliki jumlah pemberi pinjaman tertinggi. Katakanlah kita tertarik untuk mencari interval frekuensi tertinggi dari jumlah peminjam untuk semua jenis pinjaman di negara `United States`. Cek distribusinya dengan menggunakan histogram atau density chart.
+
+   Pertama, lakukan subsetting kepada data sehingga hanya tersisa data dari negara `United States`:
+    ```{r}
+    quiz$activity <- as.factor(quiz$activity)
+    quiz$sector <- as.factor(quiz$sector)
+    quiz$posted_time <- ymd_hms(quiz$posted_time)
+    quiz$funded_time <- ymd_hms(quiz$funded_time)
+    quiz_america <- quiz[quiz$country == "United States",]
+    quiz_america
+    
+    ```
+    
+    Kemudian, lakukan visualisasi untuk melihat distribusi data dari jumlah peminjam. Gunakan plot dari base R atau ggplot untuk memvisualisasikan data.
+    ```{r}
+    library(ggplot2)
+    ggplot(data = quiz_america,aes(x = sector,y = lender_count)) +
+  geom_col()
+    
+    ```
+    
+    pada range berapa frekuensi jumlah pemberi pinjaman (lender_count`) memiliki jumlah tertinggi di United States?
+```{r}
+quiz_america[quiz_america$lender_count == max(quiz_america$lender_count),]
+```
+    
+   - [ ] 0-100
+   - [ ] 100-200
+   - [ ] 200-400
+
+## Memahami Hubungan Antar Variabel
+
+Kita tertarik untuk melakukan analisis pada pinjaman yang berada pada sektor manufaktur di semua negara. Kita ingin melihat hubungan atau pola yang terbentuk antara jumlah uang yang dipinjam (`loan_amount`) dengan jumlah pemberi pinjaman (`lender_count`). 
+
+
+    Pertama, lakukan subsetting ke data awal sehingga hanya terdapat data dari sektor Manufacturing
+```{r}
+quiz_manufactur <- quiz[quiz$sector == "Manufacturing",]
+quiz_manufactur
+```
+    
+    Kemudian, buat scatterplot untuk melihat apakah terdapat pola hubungan antara jumlah uang yang dipinjam dengan jumlah pemberi pinjaman
+    
+```{r}
+plot(x = quiz_manufactur$loan_amount, y = quiz_manufactur$lender_count)
+```
+
+2. Bagaimana bentuk hubungan antara jumlah uang yang dipinjam dengan jumlah pemberi pinjaman untuk semua jenis pinjaman pada sektor `Manufacturing`?
+   - [ ] Semakin besar jumlah uang yang dipinjam, semakin rendah jumlah pemberi pinjaman
+   - [ ] Semakin besar jumlah uang yang dipinjam, semakin tinggi pula jumlah pemberi pinjaman
+   - [ ] Jumlah uang yang dipinjam dan jumlah pemberi pinjaman tidak memiliki hubungan berarti
+
+3. Mana dari pernyataan berikut yang `BENAR` sesuai dengan scatterplot yang sudah dibuat?
+
+   - [ ] Terdapat beberapa pinjaman yang memiliki jumlah uang yang dipinjam besar tetapi hanya memiliki sedikit pemberi pinjaman
+   - [ ] Terdapat beberapa pinjaman yang memiliki jumlah pemberi pinjamannya besar tetapi jumlah uang yang dipinjam sedikit
+   - [ ] Sebagian besar dari permintaan pinjaman memiliki jumlah pinjaman lebih dari 7.500 USD 
+
+## Menggunakan Line Chart untuk Analisis Trend
+
+Perhatikan kasus berikut: Salah satu dari data analis di Kiva ditugaskan untuk membuat sebuah analisis terhadap durasi waktu dari pertama kali sebuah pinjaman diposting hingga dibiayai secara penuh di `Philippines` dan dianalisis berdasarkan tiap jenis `repayment interval` atau jangka waktu pengembalian. Analis kemudian diminta untuk memvisualisasikan trend bulanan dari rata-rata waktu pembiayaan tersebut dalam satuan jam. Berikut contoh ilustrasi dari hasil akhir yang dinginkan sesuai laporan dari analis lain di Guatemala:
+
+```{r echo=FALSE, out.width="80%"}
+knitr::include_graphics("guatemala.png")
+```
+
+Tugas anda adalah membantu analisis tersebut membuat plot yang sama tetapi untuk negara `Philippines`.
+
+Untuk melakukan analisis trend, pertama kita subset terlebih dahulu datanya sehingga hanya terdapat data untuk negara `Philippines`. Kita juga perlu mengubah setiap data waktu menjadi format tanggal dan waktu yang tepat. Gunakan package `lubridate` untuk merubah tipe data dari data waktu.
+
+```{r}
+library(lubridate)
+quiz_philippines <- quiz[quiz$country == "Philippines",]
+
+```
+
+Dapatkan range dari waktu posting (`posted time`).
+
+```{r}
+range(quiz_philippines$posted_time)
+
+```
+
+4. Kapan waktu pinjaman pertama dan terakhir di 2015 diposting ke Kiva?
+
+   - [ ] 2015-01-01 01:27:00 UTC and 2015-12-31 05:54:25 UTC
+   - [ ] 2015-01-01 03:34:51 UTC and 2015-12-31 05:54:25 UTC
+   - [ ] 2015-01-01 01:27:00 UTC and 2015-12-31 23:04:04 UTC
+   - [ ] 2015-01-01 00:42:30 UTC and 2015-12-31 05:54:25 UTC
+
+Sekarang setelah tipe datanya sudah sesuai kita dapat melakukan perhitungan durasi dari sebuah pinjaman pertama kali diposting hingga berhasil didanai sepenuhnya. Buat kolom baru bernama `funding_duration` yang berisi selisih waktu antara `funded time` dan `posted time` menggunakan function `difftime()` dan pastikan satuan waktunya adalah jam (hour).
+
+
+Buat kolom baru bernama `funding_duration` yang berisi selisih waktu antara `funded_time` dan `posted_time`. 
+```{r}
+quiz_philippines$funding_duration <- quiz_philippines$funded_time - quiz_philippines$posted_time
+
+```
+
+Karena kita ingin melihat rata-rata `funding_duration` dari setiap bulannya, kita buat sebuah kolom baru bernama `month` yang berisi nama bulan dari `posted time`.
+```{r}
+quiz_philippines$month <- month(quiz_philippines$posted_time, label = T, abbr = F)
+```
+
+Mulai lakukan agregasi data untuk mendapatkan rata-rata (mean) dari `funding duration` untuk setiap bulan (`month`) dan jenis jangka waktu pengembalian (`repayment interval`) dan beri nama hasil agregasinya dengan `loan_agg`.
+
+```{r}
+loan_agg <- aggregate.data.frame(x = quiz_philippines$funding_duration,
+                                 by = list(metode = quiz_philippines$repayment_interval,
+                                           bulan = quiz_philippines$month),
+                                 sum)
+loan_agg <- setNames(loan_agg,c("metode","bulan","jumlah"))
+loan_agg = loan_agg[order(loan_agg$jumlah,decreasing = F),]
+ggplot(loan_agg, aes(x = bulan, y = jumlah, group = metode, color = metode)) +
+  geom_line() + geom_point()
+
+```
+
+5. Pada bulan apa dan dengan repayment interval seperti apa yang memiliki durasi `funding duration` terlama?
+```{r}
+
+```
+
+   - [ ] monthly repayment interval in April
+   - [ ] bullet repayment interval in January
+   - [ ] monthly repayment interval in March
+
+Setelah data sudah dipersiapakn, sekarang buat plot garis atau line chart untuk memvisualisasikan trendnya. Lengkapi code berikut untuk membuat visualisasi tersebut.
+
+```{r}
+ggplot(loan_agg, aes(x = bulan, y = jumlah, color = metode, group = metode))+
+   geom_line()+
+   geom_point()+
+   labs(title = "Funding Duration Trend on Philippines, 2015",
+        x = NULL, y = "Funding Duration",
+        color = "Repayment Interval")+
+   theme_minimal()+
+   theme(legend.position = "top")
+```
+
+6. Berdasarkan plot yang sudah dibuat, mana dari pernyataan berikut yang `BENAR`?
+
+   - [ ] `Monthly repayment interval` memiliki `funding duration` yang hampir sama dengan `Irregular repayment interval` pada bulan Agustus
+   - [ ] `Bullet repayment interval` memiliki durasi yang lebih panjang dibanding `Irregular repayment interval` pada bulan Juni
+   - [ ] `Monthly repayment interval` tidak pernah didanai lebih cepat dibandingkan `Irregular repayment interval`
