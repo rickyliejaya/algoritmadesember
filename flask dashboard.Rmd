@@ -1,0 +1,168 @@
+---
+title: "Team Algoritma"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse) # untuk transformasi data
+library(plotly) # untuk membuat plot menjadi interaktif
+library(glue) # untuk custom informasi saat plot interaktif
+library(scales) # untuk custom keterangan axis atau lainnya
+library(ggpubr)
+library(ggplot2)
+library(htmltools)
+```
+
+```{r}
+workers <- read_csv("jobs_gender.csv")
+workers_clean <- workers %>% 
+  drop_na(total_earnings_female, total_earnings_male) %>% 
+  select(-wage_percent_of_male)
+```
+```{r}
+theme_algoritma <- theme(legend.key = element_rect(fill="black"),
+           legend.background = element_rect(color="white", fill="#263238"),
+           plot.subtitle = element_text(size=6, color="white"),
+           panel.background = element_rect(fill="#dddddd"),
+           panel.border = element_rect(fill=NA),
+           panel.grid.minor.x = element_blank(),
+           panel.grid.major.x = element_blank(),
+           panel.grid.major.y = element_line(color="darkgrey", linetype=2),
+           panel.grid.minor.y = element_blank(),
+           plot.background = element_rect(fill="#263238"),
+           text = element_text(color="white"),
+           axis.text = element_text(color="white")
+           
+           )
+```
+
+```{r}
+m <- list(t = 50,
+          r = 50,
+          l = 50,
+          b = 50)
+
+```
+
+<center> <h1> "Jobs Gender Dashboard" </h1> </center>
+
+Row {data-height=500 .tabset}
+-----------------------------------------------------------------------
+
+### Plot Ranking
+
+```{r}
+data_agg1 <- workers_clean %>%
+  filter(year == 2016) %>% 
+  mutate(gap_earnings = total_earnings_male-total_earnings_female) %>% 
+  group_by(major_category) %>%
+  summarise(mean_gap = mean(gap_earnings))
+```
+```{r}
+plot_ranking <- data_agg1 %>% 
+  ggplot(aes(x = mean_gap, 
+             y = reorder(major_category,mean_gap),
+             text = glue("{major_category}
+                         Gap Earnings: {mean_gap}"))) +
+  geom_col(fill = "dodgerblue4") +
+  geom_col(data = data_agg1 %>% 
+             filter(major_category == "Computer, Engineering, and Science"), 
+           fill = "firebrick") +
+  labs( x = NULL,
+        y = NULL,
+        title = "Gap Earnings on Male and Female 2016") +
+  scale_y_discrete(labels = wrap_format(30)) + #title tdk terlalu panjang
+  # menambahkan dollar symbol
+  scale_x_continuous(labels = dollar_format(prefix = "$")) +
+  theme_algoritma
+
+```
+```{r}
+ggplotly(plot_ranking, tooltip = "text") %>% 
+  layout(margin = m)
+```
+
+### Dataset
+```{r}
+workers_clean_new <- workers_clean
+colnames(workers_clean_new) <- str_replace_all(string = colnames(workers_clean_new), 
+                                           pattern = "_", 
+                                           replacement = " ") %>% 
+  str_to_title()
+
+gt::gt(workers_clean_new)
+
+
+```
+
+Row {data-height=500}
+-----------------------------------------------------------------------
+
+### Plot Correlation {data-width=400}
+
+```{r}
+plot_dist <- workers_clean %>% 
+  ggplot(aes(total_earnings_male, 
+             total_earnings_female)) +
+  geom_jitter(aes(col = major_category,
+             text = glue("{str_to_upper(major_category)}
+                         Earnings Male: {total_earnings_male}
+                         Earnings Female: {total_earnings_female}"))) +
+  geom_smooth() +
+  labs(y = "Total Earnings Female",
+       x = "Total Earnings Male",
+       title = "Distribution of Plot Earnings") +
+  scale_color_brewer(palette = "Set3") +
+  theme_algoritma +
+  theme(legend.position = "none")
+```
+```{r}
+ggplotly(plot_dist, tooltip = "text")
+
+```
+```
+
+### Plot Composition {data-width=600}
+
+
+```{r}
+data_agg2 <- workers %>% 
+  pivot_longer(cols = c(workers_male, workers_female), 
+               names_to = "var", 
+               values_to = "value") %>% 
+  group_by(major_category, var) %>% 
+  summarise(rerata_workers = mean(value)) %>% 
+  mutate(gender = ifelse(var == "workers_female", "Female", "Male")) %>%
+  group_by(major_category) %>% 
+  mutate(proportion = round(rerata_workers/sum(rerata_workers),2)*100)
+         
+```
+
+```{r}
+plot_composition <- data_agg2 %>% 
+  ggplot(aes(x = rerata_workers, 
+             y = major_category,
+             text = glue("Gender: {gender}
+                         Mean of Workers: {proportion}%"))) +
+  geom_col(aes(fill = var), position = "fill") +
+  geom_vline(xintercept = 0.5, col = "white", lty = 2, lwd = 1.5) + #membuat vertical line
+  labs(title = "Composition of Wokers Male and Female",
+       x = NULL,
+       y = NULL) +
+  scale_fill_manual(values = c("black", "firebrick")) +
+  scale_y_discrete(labels = wrap_format(30)) + # wrap tulisan agar tidak terlalu panjang
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  theme_algoritma + #harus dirun chunk atas untuk custom theme yg disediakan
+  theme(legend.position = "none") #u
+```
+
+```{r}
+ggplotly(plot_composition, tooltip = "text") 
+  
+
+```
+
